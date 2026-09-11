@@ -5,6 +5,7 @@ import Icon from "@react-native-vector-icons/material-design-icons";
 import * as Clipboard from "expo-clipboard";
 import { api } from "@/src/api";
 import { PointsHeader } from "@/src/components/points-header";
+import { GuestGate } from "@/src/components/guest-gate";
 import { useAuth } from "@/src/auth-context";
 
 export default function Referrals() {
@@ -12,8 +13,8 @@ export default function Referrals() {
   const { user, refresh } = useAuth();
   const [data, setData] = useState<any>(null);
   const [redeem, setRedeem] = useState("");
-  const load = async () => setData(await api("/api/referrals/mine"));
-  useEffect(() => { load(); }, []);
+  const load = async () => { if (user) setData(await api("/api/referrals/mine")); };
+  useEffect(() => { load(); }, [user]);
 
   const copy = async () => {
     if (!data?.invite_link) return;
@@ -38,6 +39,9 @@ export default function Referrals() {
   return (
     <View style={{ flex: 1, backgroundColor: "#0D0D12", paddingTop: insets.top }} testID="referrals-screen">
       <PointsHeader title="الإحالات" />
+      {!user ? (
+        <GuestGate icon="account-multiple-plus" title="الإحالات" subtitle="سجّل الدخول للحصول على رابط دعوة خاص بك واربح 10 نقاط عن كل صديق يسجّل من رابطك." />
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}>
         <View style={s.hero}>
           <Text style={s.title}>ادعُ أصدقائك واربح نقاط</Text>
@@ -79,6 +83,7 @@ export default function Referrals() {
         ))}
         {(!data?.friends || data.friends.length === 0) && <Text style={{ color: "#888899", textAlign: "center", padding: 12 }}>لا يوجد أصدقاء نشطون بعد</Text>}
       </ScrollView>
+      )}
     </View>
   );
 }

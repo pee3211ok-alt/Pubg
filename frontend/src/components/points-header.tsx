@@ -9,7 +9,7 @@ export function PointsHeader({ title = "هيبة" }: { title?: string }) {
   const router = useRouter();
   return (
     <View style={s.wrap} testID="points-header">
-      <Pressable onPress={() => router.push("/(tabs)/profile" as any)} style={s.rightBlock}>
+      <Pressable onPress={() => user ? router.push("/(tabs)/profile" as any) : router.push("/login")} style={s.rightBlock}>
         <View style={s.logoBox}>
           <Icon name="crown" size={22} color="#F5A623" />
         </View>
@@ -19,15 +19,23 @@ export function PointsHeader({ title = "هيبة" }: { title?: string }) {
         </View>
       </Pressable>
 
-      <Pressable onPress={() => router.push("/notifications" as any)} style={s.notif} testID="open-notifications">
-        <Icon name="shield-outline" size={20} color="#00E676" />
-      </Pressable>
-
-      <View style={s.pointsPill} testID="points-pill">
-        <Icon name="circle" size={12} color="#F5A623" />
-        <Text style={s.pointsTxt}>{(user?.points ?? 0).toLocaleString()}</Text>
-        <Text style={s.pointsLbl}>نقطة</Text>
-      </View>
+      {user ? (
+        <>
+          <Pressable onPress={() => router.push("/(tabs)/notifications" as any)} style={s.notif} testID="open-notifications">
+            <Icon name="shield-outline" size={20} color="#00E676" />
+          </Pressable>
+          <View style={s.pointsPill} testID="points-pill">
+            <Icon name="circle" size={12} color="#F5A623" />
+            <Text style={s.pointsTxt}>{(user?.points ?? 0).toLocaleString()}</Text>
+            <Text style={s.pointsLbl}>نقطة</Text>
+          </View>
+        </>
+      ) : (
+        <Pressable onPress={() => router.push("/login")} style={s.loginPill} testID="header-login-btn">
+          <Icon name="login" size={16} color="#0D0D12" />
+          <Text style={s.loginTxt}>تسجيل الدخول</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -42,4 +50,6 @@ const s = StyleSheet.create({
   pointsPill: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: "#F5A623", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#1A1A22" },
   pointsTxt: { color: "#F5A623", fontWeight: "900", fontSize: 14 },
   pointsLbl: { color: "#B0B0B8", fontSize: 11 },
+  loginPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F5A623", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  loginTxt: { color: "#0D0D12", fontWeight: "900", fontSize: 12 },
 });

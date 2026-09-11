@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { api } from "@/src/api";
 import { useAuth } from "@/src/auth-context";
 import { PointsHeader } from "@/src/components/points-header";
+import { GuestGate } from "@/src/components/guest-gate";
 import { rarityColor } from "@/src/theme";
 
 export default function Profile() {
@@ -16,11 +17,12 @@ export default function Profile() {
   const [rewards, setRewards] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!user) return;
     (async () => {
       try { setTxs(await api("/api/transactions/mine")); } catch {}
       try { setRewards(await api("/api/rewards/mine")); } catch {}
     })();
-  }, []);
+  }, [user]);
 
   const doLogout = async () => {
     await signOut();
@@ -30,6 +32,9 @@ export default function Profile() {
   return (
     <View style={{ flex: 1, backgroundColor: "#0D0D12", paddingTop: insets.top }} testID="profile-screen">
       <PointsHeader title="الملف الشخصي" />
+      {!user ? (
+        <GuestGate icon="account" title="ملف اللاعب" subtitle="سجّل الدخول لرؤية رصيد نقاطك، جوائزك، إحالاتك، وسجل عمليات النقاط." />
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}>
         <View style={s.hero}>
           <View style={s.avatar}>
@@ -79,6 +84,7 @@ export default function Profile() {
           <Text style={s.logoutTxt}>تسجيل الخروج</Text>
         </Pressable>
       </ScrollView>
+      )}
     </View>
   );
 }

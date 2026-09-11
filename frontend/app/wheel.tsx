@@ -5,11 +5,13 @@ import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming
 import Icon from "@react-native-vector-icons/material-design-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import Svg, { Circle, G, Path, Text as SvgText, Defs, LinearGradient as SvgLG, Stop } from "react-native-svg";
+import Svg, { Circle, G, Path, Text as SvgText, Defs, LinearGradient as SvgLG, Stop, RadialGradient, Ellipse } from "react-native-svg";
 
 import { PointsHeader } from "@/src/components/points-header";
+import { Sparkles } from "@/src/components/sparkles";
 import { api } from "@/src/api";
 import { useAuth } from "@/src/auth-context";
+import { useRequireAuth } from "@/src/use-require-auth";
 import { rarityColor, rarityLabelAr } from "@/src/theme";
 
 type Prize = { prize_id: string; name: string; rarity: string; weight: number; prize_type: string; points_value: number; description?: string };
@@ -36,7 +38,8 @@ function slicePath(startAngle: number, endAngle: number) {
 export default function Wheel() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { user, refresh } = useAuth();
+  const requireAuth = useRequireAuth();
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [status, setStatus] = useState<{ can_spin: boolean; next_spin_at?: string | null; cooldown_hours: number } | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -46,9 +49,13 @@ export default function Wheel() {
 
   const load = async () => {
     setPrizes(await api("/api/wheel/prizes"));
-    try { setStatus(await api("/api/wheel/status")); } catch {}
+    if (user) {
+      try { setStatus(await api("/api/wheel/status")); } catch {}
+    } else {
+      setStatus({ can_spin: true, next_spin_at: null, cooldown_hours: 24 });
+    }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user]);
 
   useEffect(() => {
     const tick = () => {
@@ -73,27 +80,26 @@ export default function Wheel() {
   }, [prizes]);
 
   const spin = async () => {
-    if (spinning || !status?.can_spin) return;
-    setSpinning(true);
-    try {
-      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      const res = await api("/api/wheel/spin", { method: "POST" });
-      const idx = prizes.findIndex((p) => p.prize_id === res.prize_id);
-      const step = 360 / prizes.length;
-      // Target so that slice mid aligns to top (0deg pointer). We spin backward: rotation is applied to wheel.
-      // Pointer at 270 (top). We want mid at 270 => rotation = 270 - (mid) mod 360.
-      // Because slice mid is at angle (idx*step + step/2) in wheel coords, and wheel rotates by `rotation`, final position = mid + rotation.
-      // We want (mid + rotation) mod 360 === 0 (top), so rotation = -mid mod 360.
-      const targetBase = (360 - (idx * step + step / 2)) % 360;
-      const spins = 6; // extra full rotations
-      const target = spins * 360 + targetBase;
-      rotation.value = withTiming(target, { duration: 4800, easing: Easing.out(Easing.cubic) }, (fin) => {
-        if (fin) runOnJS(finishSpin)(res);
-      });
-    } catch (e: any) {
-      setSpinning(false);
-      Alert.alert("خطأ", e?.message || "فشل الدوران");
-    }
+    if (spinning) return;
+    requireAuth("للف عجلة الحظ والفوز بجوائز PUBG.", async () => {
+      if (!status?.can_spin) return;
+      setSpinning(true);
+      try {
+        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        const res = await api("/api/wheel/spin", { method: "POST" });
+        const idx = prizes.findIndex((p) => p.prize_id === res.prize_id);
+        const step = 360 / prizes.length;
+        const targetBase = (360 - (idx * step + step / 2)) % 360;
+        const spins = 6;
+        const target = spins * 360 + targetBase;
+        rotation.value = withTiming(target, { duration: 4800, easing: Easing.out(Easing.cubic) }, (fin) => {
+          if (fin) runOnJS(finishSpin)(res);
+        });
+      } catch (e: any) {
+        setSpinning(false);
+        Alert.alert("خطأ", e?.message || "فشل الدوران");
+      }
+    });
   };
 
   const finishSpin = async (res: any) => {
@@ -115,11 +121,15 @@ export default function Wheel() {
       <PointsHeader title="عجلة الحظ" />
       <ScrollView contentContainerStyle={{ padding: 16, alignItems: "center", paddingBottom: 40 }}>
         <View style={s.timerCard}>
-          <Text style={s.timerLbl}>الوقت المتبقي للدوران القادم</Text>
-          <Text style={s.timerVal}>{status?.can_spin ? "متاحة الآن 🔥" : cooldown || "..."}</Text>
+          <Text style={s.timerLbl}>{user ? "الوقت المتبقي للدوران القادم" : "سجّل الدخول لتدوير العجلة"}</Text>
+          <Text style={s.timerVal}>{!user ? "🔥 مجاناً كل 24 ساعة" : (status?.can_spin ? "متاحة الآن 🔥" : cooldown || "...")}</Text>
         </View>
 
         <View style={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30, alignItems: "center", justifyContent: "center", marginTop: 20 }}>
+          {/* Sparkles overlay behind wheel */}
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center" }}>
+            <Sparkles count={20} area={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30 }} />
+          </View>
           {/* Pointer */}
           <View style={s.pointer}>
             <Icon name="triangle" size={28} color="#F5A623" style={{ transform: [{ rotate: "180deg" }] }} />
@@ -131,32 +141,59 @@ export default function Wheel() {
                   <Stop offset="0" stopColor="#F5A623" />
                   <Stop offset="1" stopColor="#FF5722" />
                 </SvgLG>
+                <RadialGradient id="disc" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0" stopColor="#3a2a4a" />
+                  <Stop offset="1" stopColor="#0a0a0f" />
+                </RadialGradient>
               </Defs>
               <Circle cx={CENTER} cy={CENTER} r={R + 3} fill="url(#ring)" />
               {slices.map((sl, i) => {
                 const rc = rarityColor(sl.prize.rarity);
+                const midRad = (sl.mid - 90) * Math.PI / 180;
+                const discR = R * 0.62;
+                const dx = CENTER + discR * Math.cos(midRad);
+                const dy = CENTER + discR * Math.sin(midRad);
                 return (
                   <G key={sl.prize.prize_id}>
                     <Path d={slicePath(sl.start, sl.end)} fill={SLICE_COLORS[i % 2]} stroke={rc} strokeWidth={1.5} />
+                    {/* Prize disc (circular badge inside slice) */}
+                    <Circle cx={dx} cy={dy} r={22} fill="url(#disc)" stroke={rc} strokeWidth={2} />
+                    {/* Name below the disc */}
                     <G rotation={sl.mid} originX={CENTER} originY={CENTER}>
                       <SvgText
                         x={CENTER}
-                        y={CENTER - R + 32}
+                        y={CENTER - R + 18}
                         fill={rc}
-                        fontSize={12}
+                        fontSize={11}
                         fontWeight="800"
                         textAnchor="middle"
                       >
-                        {sl.prize.name.length > 14 ? sl.prize.name.slice(0, 12) + "…" : sl.prize.name}
+                        {sl.prize.name.length > 12 ? sl.prize.name.slice(0, 10) + "…" : sl.prize.name}
                       </SvgText>
                     </G>
                   </G>
                 );
               })}
+              {/* Center circle */}
+              <Circle cx={CENTER} cy={CENTER} r={48} fill="#F5A623" opacity={0.15} />
               <Circle cx={CENTER} cy={CENTER} r={44} fill="#0D0D12" stroke="#F5A623" strokeWidth={2} />
             </Svg>
+            {/* Emoji-like icons on top of the disc (React Native icons over SVG) */}
+            {slices.map((sl) => {
+              const midRad = (sl.mid - 90) * Math.PI / 180;
+              const discR = R * 0.62;
+              const dx = CENTER + discR * Math.cos(midRad) - 14;
+              const dy = CENTER + discR * Math.sin(midRad) - 14;
+              const rc = rarityColor(sl.prize.rarity);
+              const iconName = sl.prize.prize_type === "item" ? "package-variant-closed" : (sl.prize.rarity === "legendary" ? "trophy" : (sl.prize.rarity === "epic" ? "diamond-stone" : (sl.prize.rarity === "rare" ? "star-four-points" : "poker-chip")));
+              return (
+                <View key={sl.prize.prize_id + "-ic"} style={{ position: "absolute", left: dx, top: dy, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name={iconName} size={22} color={rc} />
+                </View>
+              );
+            })}
           </Animated.View>
-          <Pressable onPress={spin} disabled={spinning || !status?.can_spin} style={s.spinBtn} testID="spin-btn">
+          <Pressable onPress={spin} disabled={spinning || (!!user && !status?.can_spin)} style={s.spinBtn} testID="spin-btn">
             <Text style={s.spinTxt}>{spinning ? "..." : "أدر"}</Text>
           </Pressable>
         </View>

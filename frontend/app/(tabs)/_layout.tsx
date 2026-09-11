@@ -19,26 +19,29 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
       }}
     >
+      {/* Order in RTL (right → left): home, store, rewards, notifications, profile */}
       <Tabs.Screen name="home" options={{
         title: "الرئيسية",
         tabBarIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
       }} />
       <Tabs.Screen name="store" options={{
-        title: "المتجر",
+        title: "متجر الجوائز",
         tabBarIcon: ({ color, size }) => <Icon name="cart" size={size} color={color} />,
       }} />
       <Tabs.Screen name="rewards" options={{
         title: "جوائزي",
-        tabBarIcon: ({ color, size }) => <Icon name="gift" size={size} color={color} />,
+        tabBarIcon: ({ color, size }) => <Icon name="package-variant-closed" size={size} color={color} />,
+      }} />
+      <Tabs.Screen name="notifications" options={{
+        title: "الإشعارات",
+        tabBarIcon: ({ color, size }) => <Icon name="bell" size={size} color={color} />,
       }} />
       <Tabs.Screen name="profile" options={{
-        title: "الملف",
+        title: "ملف اللاعب",
         tabBarIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
       }} />
-      <Tabs.Screen name="more" options={{
-        title: "المزيد",
-        tabBarIcon: ({ color, size }) => <Icon name="dots-horizontal" size={size} color={color} />,
-      }} />
+      {/* keep 'more' out — routed only via home shortcuts */}
+      <Tabs.Screen name="more" options={{ href: null }} />
     </Tabs>
   );
 }

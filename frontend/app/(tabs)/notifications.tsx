@@ -4,14 +4,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "@react-native-vector-icons/material-design-icons";
 import { api } from "@/src/api";
 import { PointsHeader } from "@/src/components/points-header";
+import { GuestGate } from "@/src/components/guest-gate";
+import { useAuth } from "@/src/auth-context";
 
 const icons: Record<string, string> = { trophy: "trophy", cart: "cart", bell: "bell", info: "information", crown: "crown" };
 const colorMap: Record<string, string> = { trophy: "#F5A623", cart: "#00E676", bell: "#2979FF", info: "#FF5722", crown: "#F5A623" };
 
 export default function Notifications() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
-  useEffect(() => { (async () => setItems(await api("/api/notifications")))(); }, []);
+  useEffect(() => { if (user) (async () => setItems(await api("/api/notifications")))(); }, [user]);
 
   const timeAgo = (d: string) => {
     const diff = Date.now() - new Date(d).getTime();
@@ -25,6 +28,9 @@ export default function Notifications() {
   return (
     <View style={{ flex: 1, backgroundColor: "#0D0D12", paddingTop: insets.top }} testID="notifications-screen">
       <PointsHeader title="الإشعارات" />
+      {!user ? (
+        <GuestGate icon="bell" title="الإشعارات" subtitle="سجّل الدخول لعرض إشعاراتك الشخصية عن الجوائز، المشتريات، والقنوات الجديدة." />
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}>
         {items.length === 0 && (
           <View style={{ alignItems: "center", padding: 40, gap: 12 }}>
@@ -45,6 +51,7 @@ export default function Notifications() {
           </View>
         ))}
       </ScrollView>
+      )}
     </View>
   );
 }

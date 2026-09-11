@@ -60,14 +60,13 @@ function Gate() {
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === "login";
-    const inSubscribe = segments[0] === "subscribe";
-    if (!user && !inAuth) {
-      router.replace("/login");
-    } else if (user && inAuth) {
-      // send to home or subscribe
+    if (user && inAuth) {
+      // Just logged in — send to subscribe if needed, else home
       const needsSub = !(user.subscribed_channels?.length);
       router.replace(needsSub ? "/subscribe" : "/(tabs)/home");
     }
+    // No forced redirect to /login when user is null — allow guest browsing.
+    // Protected actions (spin, purchase, subscribe verify) each redirect themselves.
   }, [user, loading, segments, router]);
 
   if (loading) {

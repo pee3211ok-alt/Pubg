@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "@react-native-vector-icons/material-design-icons";
 import { api, fileUrl } from "@/src/api";
 import { PointsHeader } from "@/src/components/points-header";
+import { GuestGate } from "@/src/components/guest-gate";
+import { useAuth } from "@/src/auth-context";
 import { rarityColor, rarityLabelAr } from "@/src/theme";
 
 type Item = { id: string; source: "wheel"|"store"; name: string; rarity: string; image_url?: string; status: string; created_at: string; points_awarded?: number; price_points?: number };
@@ -13,13 +15,17 @@ const statusColor = (s: string) => ({ pending: "#FFD700", approved: "#2979FF", d
 
 export default function Rewards() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
-  const load = async () => setItems(await api("/api/rewards/mine"));
-  useEffect(() => { load(); }, []);
+  const load = async () => { if (user) setItems(await api("/api/rewards/mine")); };
+  useEffect(() => { load(); }, [user]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0D0D12", paddingTop: insets.top }} testID="rewards-screen">
       <PointsHeader title="جوائزي" />
+      {!user ? (
+        <GuestGate icon="gift" title="جوائزي" subtitle="سجّل الدخول لعرض الجوائز التي ربحتها من عجلة الحظ والمتجر مع حالة كل جائزة." />
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} refreshControl={<RefreshControl tintColor="#F5A623" refreshing={false} onRefresh={load} />}>
         {items.length === 0 && (
           <View style={s.empty}>
@@ -48,6 +54,7 @@ export default function Rewards() {
           </View>
         ))}
       </ScrollView>
+      )}
     </View>
   );
 }
