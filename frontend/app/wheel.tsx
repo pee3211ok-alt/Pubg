@@ -139,64 +139,60 @@ export default function Wheel() {
             <Svg width={WHEEL_SIZE} height={WHEEL_SIZE}>
               <Defs>
                 <SvgLG id="ring" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor="#F5A623" />
-                  <Stop offset="1" stopColor="#FF5722" />
+                  <Stop offset="0" stopColor="#FFD26B" />
+                  <Stop offset="1" stopColor="#F5A623" />
                 </SvgLG>
               </Defs>
+              {/* Outer gold ring */}
               <Circle cx={CENTER} cy={CENTER} r={R + 3} fill="url(#ring)" />
-              {slices.map((sl, i) => (
+              <Circle cx={CENTER} cy={CENTER} r={R - 2} fill="#0D0D12" />
+              {/* Slice separators — gold radial lines */}
+              {slices.map((sl) => (
                 <G key={sl.prize.prize_id}>
-                  <Path d={slicePath(sl.start, sl.end)} fill={SLICE_COLORS[i % 2]} stroke="#F5A623" strokeWidth={0.6} strokeOpacity={0.6} />
+                  <Path d={slicePath(sl.start, sl.end)} fill="transparent" stroke="#F5A623" strokeWidth={1.5} strokeOpacity={0.75} />
                 </G>
               ))}
               {/* Center circle */}
-              <Circle cx={CENTER} cy={CENTER} r={52} fill="#F5A623" opacity={0.12} />
-              <Circle cx={CENTER} cy={CENTER} r={46} fill="#0D0D12" stroke="#F5A623" strokeWidth={2} />
+              <Circle cx={CENTER} cy={CENTER} r={54} fill="#F5A623" opacity={0.15} />
+              <Circle cx={CENTER} cy={CENTER} r={48} fill="#0D0D12" stroke="#F5A623" strokeWidth={2.5} />
             </Svg>
 
-            {/* Per-slice content: circular prize DISC (image) + WHITE prize name — positioned + rotated with slice */}
+            {/* Per-slice content: circular BUBBLE (image + prize name inside) — no rotation, text stays readable */}
             {slices.map((sl) => {
               const midRad = (sl.mid - 90) * Math.PI / 180;
               const discR = R * 0.60;
-              const discSize = 56;
+              const bubbleSize = 72;
               const cx = CENTER + discR * Math.cos(midRad);
               const cy = CENTER + discR * Math.sin(midRad);
               const rc = rarityColor(sl.prize.rarity);
-              const iconName = sl.prize.prize_type === "item"
-                ? "package-variant-closed"
-                : (sl.prize.rarity === "legendary" ? "trophy"
-                : (sl.prize.rarity === "epic" ? "diamond-stone"
-                : (sl.prize.rarity === "rare" ? "star-four-points" : "poker-chip")));
-              // Rotation for text/disc positioned along the radius pointing outward
-              const rot = sl.mid;
               return (
                 <View
                   key={sl.prize.prize_id + "-slice"}
                   style={{
                     position: "absolute",
-                    left: cx - discSize / 2,
-                    top: cy - discSize / 2,
-                    width: discSize,
-                    height: discSize,
+                    left: cx - bubbleSize / 2,
+                    top: cy - bubbleSize / 2,
+                    width: bubbleSize,
+                    height: bubbleSize,
                     alignItems: "center",
                     justifyContent: "center",
-                    transform: [{ rotate: `${rot}deg` }],
                   }}
                 >
-                  {/* Circular DISC with prize image (or fallback icon) */}
-                  <View style={[s.disc, { borderColor: rc, shadowColor: rc }]}>
+                  <View style={[s.bubble, { borderColor: rc }]}>
                     {sl.prize.image_url ? (
-                      <Image source={{ uri: fileUrl(sl.prize.image_url) }} style={s.discImg} resizeMode="cover" />
+                      <>
+                        <Image source={{ uri: fileUrl(sl.prize.image_url) }} style={s.bubbleImg} resizeMode="cover" />
+                        <View style={s.bubbleImgOverlay} />
+                        <Text style={s.bubbleImgText} numberOfLines={2}>
+                          {sl.prize.name}
+                        </Text>
+                      </>
                     ) : (
-                      <View style={[s.discImg, { alignItems: "center", justifyContent: "center", backgroundColor: "#1a1a22" }]}>
-                        <Icon name={iconName} size={24} color={rc} />
-                      </View>
+                      <Text style={[s.bubbleText, { color: rc }]} numberOfLines={2}>
+                        {sl.prize.name}
+                      </Text>
                     )}
                   </View>
-                  {/* White prize name below the disc */}
-                  <Text style={s.sliceLabel} numberOfLines={1}>
-                    {sl.prize.name.length > 11 ? sl.prize.name.slice(0, 10) + "…" : sl.prize.name}
-                  </Text>
                 </View>
               );
             })}
@@ -205,6 +201,14 @@ export default function Wheel() {
             <Text style={s.spinTxt}>{spinning ? "..." : "أدر"}</Text>
           </Pressable>
         </View>
+
+        {/* Big "Spin Now" button below the wheel */}
+        <Pressable onPress={spin} disabled={spinning || (!!user && !status?.can_spin)} testID="spin-big-btn" style={s.bigSpinWrap}>
+          <View style={[s.bigSpin, (spinning || (!!user && !status?.can_spin)) && { opacity: 0.6 }]}>
+            <Icon name="ferris-wheel" size={22} color="#0D0D12" />
+            <Text style={s.bigSpinTxt}>{spinning ? "جاري الدوران..." : "أدر العجلة الآن"}</Text>
+          </View>
+        </Pressable>
 
         <View style={s.pillsRow}>
           {[
@@ -272,6 +276,14 @@ const s = StyleSheet.create({
   timerLbl: { color: "#B0B0B8", fontSize: 12 },
   timerVal: { color: "#F5A623", fontSize: 26, fontWeight: "900", letterSpacing: 3, marginTop: 4 },
   pointer: { position: "absolute", top: 4, zIndex: 5 },
+  bubble: { width: 68, height: 68, borderRadius: 34, borderWidth: 2.5, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#0D0D12" },
+  bubbleImg: { position: "absolute", width: "100%", height: "100%", borderRadius: 34 },
+  bubbleImgOverlay: { position: "absolute", width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.35)", borderRadius: 34 },
+  bubbleImgText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900", textAlign: "center", paddingHorizontal: 4 },
+  bubbleText: { fontSize: 12, fontWeight: "900", textAlign: "center", paddingHorizontal: 4 },
+  bigSpinWrap: { width: "100%", marginTop: 24 },
+  bigSpin: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#F5A623", borderRadius: 14, paddingVertical: 14, borderWidth: 2, borderColor: "#FFC061" },
+  bigSpinTxt: { color: "#0D0D12", fontWeight: "900", fontSize: 16 },
   disc: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#0D0D12" },
   discImg: { width: "100%", height: "100%", borderRadius: 22 },
   sliceLabel: { color: "#FFFFFF", fontSize: 11, fontWeight: "900", textAlign: "center", marginTop: 4, textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 }, maxWidth: 80 },
