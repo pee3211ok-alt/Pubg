@@ -1,0 +1,42 @@
+{
+  "summary": "HEEBA/هيبة PUBG rewards app — regression + bug-fix verification. PRIMARY BUG FIX VERIFIED: admin login on /login is now an inline collapsible section (data-testid='admin-box'), NOT a modal. Confirmed on mobile viewport (390x844): tapping admin-login-btn expands the inline box; both admin-email-input and admin-password-input accept keyboard input (verified via char-by-char page.keyboard.type simulating a real mobile keyboard); admin-submit-btn logs in and redirects to /home (subscribed_channels persisted from prior tests). Backend: 28/29 pytest tests passed; the single failure (test_admin_users_points) is a known parallel-worker race with test_purchase_success (both mutate admin.points concurrently under xdist -n auto) — endpoint is fine. Frontend flows verified: home (points-header, open-wheel-btn, referral-cta, admin-panel-btn golden, 6 tiles), wheel (SVG gold ring, circular prize bubbles with WHITE readable text INSIDE bubbles/not rotated, sparkles, spin-btn center + big spin-big-btn, timer chip 23:58:52), store (5 category tabs الكل/UC/سكنات/صناديق/items, product cards with rarity badges, orange شراء buttons), 5-tab bottom nav in correct RTL order (الرئيسية | متجر | جوائزي | الإشعارات | ملف اللاعب), admin dashboard (3 stats + 7 tiles), admin/prizes screen accessible. Guest can browse home/wheel/store; header-login-btn always visible top-right redirects to /login. Deprecated style-prop console warnings persist: textShadow*/shadow* — carried over from iteration_1.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "test suite", "issue": "test_admin_users_points fails intermittently under pytest-xdist parallel workers because test_purchase_success (in a different worker) also mutates admin.points. Serial run passes. Consider marking these tests with a shared xdist-group or using a dedicated non-admin user for purchase tests."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Guest tap on spin-btn / spin-big-btn / buy-{product_id}", "issue": "On React Native Web, Alert.alert with 2 buttons (as used in useRequireAuth) is NOT polyfilled — the tap silently no-ops on web preview. On native mobile (Expo Go / build) Alert.alert works normally. Users on web still see the top-right 'تسجيل الدخول' header button and the wheel timer chip 'سجّل الدخول للف العجلة' as visual cue, so it is not a blocker but is a UX gap on web.", "affected_testIDs": ["spin-btn", "spin-big-btn", "buy-<product_id>"]}
+    ],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Global styles", "issue": "React Native Web deprecation warnings: 'textShadow*' and 'shadow*' style props are deprecated. Fire on nearly every screen (login, home, wheel, admin). Non-fatal but noisy. Reference: multiple StyleSheet.create blocks across app/*.tsx."},
+      {"component": "useRequireAuth (Alert.alert)", "issue": "Alert.alert multi-button dialogs do not render on React Native Web — silent no-op on web preview. Consider showing an inline banner or router.push('/login') fallback when Platform.OS==='web'. Reference: /app/frontend/src/use-require-auth.ts:17-24."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_heeba_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: In /app/frontend/src/use-require-auth.ts, add a Platform.OS==='web' branch that either shows an inline toast or calls router.push('/login') directly instead of Alert.alert — RN Web does not render Alert.alert with multiple buttons, so guests currently see no feedback when they tap spin/buy on the web preview.",
+    "OPTIONAL: In /app/backend/tests/test_heeba_backend.py, mark test_admin_users_points and test_purchase_success with the same xdist-group (@pytest.mark.xdist_group('admin_points')) so they run serially and stop competing for admin.points.",
+    "OPTIONAL (from iteration_1): migrate deprecated textShadow*/shadow* style props to unified textShadow/boxShadow across screens."
+  ],
+  "critical_code_review_comments": [
+    "login.tsx cleanly implements the inline admin flow using local state (showAdmin) — no modal, no Portal, no KeyboardAvoidingView traps. TextInput uses keyboardShouldPersistTaps='handled' on the parent ScrollView so tap-to-focus while keyboard is open works on mobile.",
+    "TextInputs correctly set autoCapitalize='none', keyboardType='email-address' for email, secureTextEntry for password — good mobile UX.",
+    "admin-submit-btn is disabled while busy, showing '...' — good loading state.",
+    "server.py unchanged since iteration_1 — still ~780 lines; a router-per-resource refactor is still recommended as the app grows."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "97% (28/29 pytest; 1 flaky parallel-race)", "frontend": "100% of critical flows verified"},
+  "seed_data_creation": "No new seed data. Reused existing seeded data (7 prizes, 7 products, 3 channels, 5 creators). Reset admin.last_spin_at before pytest run so wheel-spin cooldown test could execute.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Primary bug ('admin login modal blocking keyboard on mobile') is FIXED. Inline admin-box on /login accepts keyboard input on 390x844 viewport. All 28 passing pytest tests still pass. Reset admin points/last_spin_at in Mongo before rerunning wheel/purchase tests. Admin submit → redirects to /home (admin already has subscribed_channels from earlier runs); if you want to re-test /subscribe redirect, unset subscribed_channels: mongosh heeba_pubg --eval 'db.users.updateOne({email:\"admin@heeba.app\"},{$unset:{subscribed_channels:\"\"}})'. Only real remaining issue is web-only Alert.alert silent no-op on guest taps — cosmetic on web preview, works on native.",
+  "rca_of_issue": "The reported bug ('admin login inputs on mobile web browser were not receiving text') was caused by the previous Modal-based admin login. On mobile Safari/Chrome, Modal wraps its content in a fixed-position overlay that intercepts keyboard focus events on the web preview. The fix converts the login to a plain inline <View testID='admin-box'> that lives inside the same card as the Google button, controlled by useState('showAdmin'). Because the inputs are now regular ScrollView children with keyboardShouldPersistTaps='handled', focus and keyboard input work correctly on both desktop and mobile viewports. Verified with Playwright char-by-char keyboard.type() on 390x844 viewport — email and password values both accepted correctly."
+}
