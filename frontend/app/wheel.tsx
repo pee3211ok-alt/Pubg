@@ -121,8 +121,9 @@ export default function Wheel() {
       <PointsHeader title="عجلة الحظ" />
       <ScrollView contentContainerStyle={{ padding: 16, alignItems: "center", paddingBottom: 40 }}>
         <View style={s.timerCard}>
-          <Text style={s.timerLbl}>{user ? "الوقت المتبقي للدوران القادم" : "سجّل الدخول لتدوير العجلة"}</Text>
-          <Text style={s.timerVal}>{!user ? "🔥 مجاناً كل 24 ساعة" : (status?.can_spin ? "متاحة الآن 🔥" : cooldown || "...")}</Text>
+          <Icon name="clock-fast" size={16} color="#F5A623" />
+          <Text style={s.timerLbl}>{user ? "الوقت المتبقي:" : "سجّل الدخول للف العجلة —"}</Text>
+          <Text style={s.timerVal}>{!user ? "مجاناً كل 24 ساعة 🔥" : (status?.can_spin ? "متاحة الآن 🔥" : cooldown || "...")}</Text>
         </View>
 
         <View style={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30, alignItems: "center", justifyContent: "center", marginTop: 20 }}>
@@ -272,9 +273,9 @@ export default function Wheel() {
 }
 
 const s = StyleSheet.create({
-  timerCard: { alignItems: "center", padding: 12, borderRadius: 14, backgroundColor: "#1A1A22", borderWidth: 1, borderColor: "#33333F", width: "100%" },
-  timerLbl: { color: "#B0B0B8", fontSize: 12 },
-  timerVal: { color: "#F5A623", fontSize: 26, fontWeight: "900", letterSpacing: 3, marginTop: 4 },
+  timerCard: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, backgroundColor: "#1A1A22", borderWidth: 1, borderColor: "#33333F", alignSelf: "center" },
+  timerLbl: { color: "#B0B0B8", fontSize: 12, fontWeight: "700" },
+  timerVal: { color: "#F5A623", fontSize: 13, fontWeight: "900" },
   pointer: { position: "absolute", top: 4, zIndex: 5 },
   bubble: { width: 68, height: 68, borderRadius: 34, borderWidth: 2.5, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#0D0D12" },
   bubbleImg: { position: "absolute", width: "100%", height: "100%", borderRadius: 34 },
