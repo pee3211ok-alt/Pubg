@@ -40,8 +40,6 @@ export default function TabsLayout() {
         title: "ملف اللاعب",
         tabBarIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
       }} />
-      {/* keep 'more' out — routed only via home shortcuts */}
-      <Tabs.Screen name="more" options={{ href: null }} />
     </Tabs>
   );
 }
