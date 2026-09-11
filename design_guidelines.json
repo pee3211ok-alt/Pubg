@@ -1,0 +1,170 @@
+{
+  "app_name": "هيبة / HEEBA — PUBG Rewards & Lucky Wheel",
+  "personality": "7 Dark-First Utility layout + 6 Glass / Luxe depth (Gaming & Military Fusion)",
+  "personality_one_liner": "A premium, tactical command-center that feels like an elite battle royale lobby—dark, metallic, and illuminated by fiery gold and neon rarity glows.",
+  "color": {
+    "surface": "#0D0D12",
+    "onSurface": "#F0F0F5",
+    "surfaceSecondary": "#1A1A22",
+    "onSurfaceSecondary": "#D0D0D8",
+    "surfaceTertiary": "#262630",
+    "onSurfaceTertiary": "#B0B0B8",
+    "surfaceInverse": "#E5E5E8",
+    "onSurfaceInverse": "#0D0D12",
+    "brand": "#F5A623",
+    "brandPrimary": "#F5A623",
+    "onBrandPrimary": "#0D0D12",
+    "brandSecondary": "#FF5722",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#4B5320",
+    "onBrandTertiary": "#FFFFFF",
+    "success": "#00E676",
+    "onSuccess": "#000000",
+    "warning": "#FFD700",
+    "onWarning": "#000000",
+    "error": "#FF1744",
+    "onError": "#FFFFFF",
+    "info": "#2979FF",
+    "onInfo": "#FFFFFF",
+    "border": "#33333F",
+    "borderStrong": "#555566",
+    "divider": "#2A2A35",
+    "muted": "#888899",
+    "onBrand": "#0D0D12"
+  },
+  "typography": {
+    "displayFontFamily": "Rajdhani",
+    "textFontFamily": "Cairo",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous padding around elements (lg=16px) but rigid structural grids. Use 2-column or 3-column structured layouts to accommodate dense gaming stats.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "2",
+  "navigation": "bottom_tabs",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Apply frosted glass (expo-blur) over the dark military background for all main cards, headers, and bottom tabs.",
+      "Pair blur with a translucent #1A1A22 tint underneath at >70% opacity to ensure text remains perfectly readable.",
+      "Use glass to create depth between the 'Lobby Background' and the interactive UI elements."
+    ],
+    "dont's": [
+      "Never blur body text regions or form fields.",
+      "Do not use glass without a dark tint underneath; the background battle/smoke graphics will make text unreadable without it."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-blur",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Login",
+      "purpose": "High-impact visual entry using a PUBG-style soldier hero image.",
+      "states": {
+        "loading": "Centered glowing gold spinner",
+        "empty": "N/A",
+        "error": "Standard alert toast"
+      },
+      "layout": "Full-bleed background image of a soldier/battlefield. A gradient scrim layer (vertical, top->bottom, transparent to 90% surfaceInverse/black) sits over the bottom half. The Google Login button sits in the bottom third, featuring a glass container and a gold glowing border."
+    },
+    {
+      "name": "Home (Lobby)",
+      "purpose": "The main gaming command center combining user stats, daily tasks, and quick links.",
+      "states": {
+        "loading": "Skeleton grids with metallic shimmer",
+        "empty": "N/A",
+        "error": "Full screen error with 'Retry Connection' button"
+      },
+      "layout": "Background is an abstract dark military battlefield graphic (blurred). Top: User glass card (Avatar, name, total points, invite code). Middle: Large 'Lucky Wheel' promotional glass card showing the wheel preview and 24h timer. Below that: CTA card 'Collect points by sharing' (Orange accent). Bottom: 2x2 grid of quick links (Store, Guides, Sensitivity, Creators)."
+    },
+    {
+      "name": "Lucky Wheel",
+      "purpose": "A thrilling daily reward spinner with high-tension gaming visuals.",
+      "states": {
+        "loading": "Wheel silhouette pulsing",
+        "empty": "N/A",
+        "error": "Error loading wheel data"
+      },
+      "layout": "Large animated 3D wheel centered. A massive glowing Gold 'Spin' button in the center. Below the wheel: A countdown timer using Rajdhani (e.g., 23:59:59). Bottom section: A horizontal scrolling 'Pill row' of expected prizes highlighting rarities (Common 60% in Gray, Rare 20% in Blue, Epic 15% in Purple, Legendary 5% in Gold). A mandatory-subscribe banner pinned at the bottom."
+    },
+    {
+      "name": "Store",
+      "purpose": "Grid layout for browsing and purchasing PUBG-related digital items and UC.",
+      "states": {
+        "loading": "Grid of pulsing dark cards",
+        "empty": "Icon of empty supply crate + 'Store refreshing soon'",
+        "error": "Error loading inventory"
+      },
+      "layout": "Top: Horizontal scrollable chips for categories (All, UC, Skins, Boxes). Below: 2-column grid of product cards. Each card has a dark metallic background, product image, rarity glow (colored border), and a yellow 'شراء' (Buy) button. Price is displayed large using the Rajdhani font alongside a 3D Golden Coin icon."
+    },
+    {
+      "name": "Profile",
+      "purpose": "PUBG-style player card and account management hub.",
+      "states": {
+        "loading": "Skeleton UI",
+        "empty": "No recent activity",
+        "error": "Failed to load player stats"
+      },
+      "layout": "Top: Player ID Card style header with Avatar, Level progress bar (horizontal gradient), and big stat numbers. Below: Horizontal scroll row of recent Prize Inventory. Bottom: Vertical list of settings and logs (Points Log, Orders, Account Settings) with chevrons."
+    }
+  ],
+  "images": {
+    "soldier_hero_bg": {
+      "url": "fallback",
+      "dark": "fallback",
+      "alt": "Dark cinematic 3D render of a futuristic military soldier silhouette standing in smoke and battlefield debris, PUBG style, glowing orange and gold accents, high contrast, portrait crop"
+    },
+    "golden_coin": {
+      "url": "https://images.unsplash.com/photo-1633176640669-44bd6adaa662?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwxfHxnb2xkZW4lMjBjb2luJTIwM2QlMjBnYW1lJTIwYXNzZXR8ZW58MHx8fHwxNzg5MDg5MzA1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "golden coin game asset"
+    },
+    "lucky_wheel_3d": {
+      "url": "https://images.unsplash.com/photo-1752085777042-f70b4cf31d53?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODh8MHwxfHNlYXJjaHwyfHxzcGlubmluZyUyMGx1Y2t5JTIwd2hlZWwlMjBuZW9uJTIwZ29sZCUyMDNkfGVufDB8fHx8MTc4OTA4OTMwNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Spinning lucky wheel neon gold 3d"
+    },
+    "military_texture_bg": {
+      "url": "https://images.unsplash.com/photo-1778149590251-131d4260d3c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbWlsaXRhcnklMjBjYW1vdWZsYWdlJTIwdGV4dHVyZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzg5MDg5MzI1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark military camouflage texture background"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly enforce Arabic RTL layout where applicable, but keep numbers and English co-branding (HEEBA) in LTR format using the 'Rajdhani' font for a technical, gaming feel.",
+    "Use 'Cairo' for all Arabic body and UI text as it is a highly legible and modern sans-serif.",
+    "Rarity Tiers Implementation: You MUST use these specific colors for borders, badges, and glows to denote rarity: Common (#9E9E9E), Rare (#00BFA5), Epic (#8E24AA), Legendary (#FFD700 with shadow glow). Do NOT use default colors for rarity items.",
+    "Glassmorphism is crucial here. Use `expo-blur` heavily on cards (especially the Home Lobby) to sit on top of the 'military_texture_bg' image, but ALWAYS pair it with a dark `#1A1A22` overlay at 75% opacity to guarantee text contrast.",
+    "Never use Indigo, Blue, or Purple for primary UI elements. The only exception is Purple (#8E24AA) strictly for the 'Epic' rarity tier. Base UI is metallic dark grays with Gold/Orange action colors.",
+    "For the hero login screen, if the image URL is 'fallback', use the image_generation_tool with the provided alt text to generate the soldier hero image.",
+    "Use a token-based layout: all cards should either be full-width (minus screen padding) or sit in a strict 2-column wrapping grid (`justifyContent: space-between`, gap `md`). Do not let cards sit awkwardly at 48% with no spacing.",
+    "Ensure the CTA on the Login screen and the Spin button on the Wheel screen use the `brandPrimary` (#F5A623) color with a tactile, heavy feel (shadow tier 2 or 3)."
+  ]
+}
