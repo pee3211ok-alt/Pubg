@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Platform, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Platform, Dimensions, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Icon from "@react-native-vector-icons/material-design-icons";
@@ -9,12 +9,12 @@ import Svg, { Circle, G, Path, Text as SvgText, Defs, LinearGradient as SvgLG, S
 
 import { PointsHeader } from "@/src/components/points-header";
 import { Sparkles } from "@/src/components/sparkles";
-import { api } from "@/src/api";
+import { api, fileUrl } from "@/src/api";
 import { useAuth } from "@/src/auth-context";
 import { useRequireAuth } from "@/src/use-require-auth";
 import { rarityColor, rarityLabelAr } from "@/src/theme";
 
-type Prize = { prize_id: string; name: string; rarity: string; weight: number; prize_type: string; points_value: number; description?: string };
+type Prize = { prize_id: string; name: string; rarity: string; weight: number; prize_type: string; points_value: number; description?: string; image_url?: string };
 
 const { width } = Dimensions.get("window");
 const WHEEL_SIZE = Math.min(width - 40, 340);
@@ -128,67 +128,75 @@ export default function Wheel() {
         <View style={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30, alignItems: "center", justifyContent: "center", marginTop: 20 }}>
           {/* Sparkles overlay behind wheel */}
           <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center" }}>
-            <Sparkles count={20} area={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30 }} />
+            <Sparkles count={22} area={{ width: WHEEL_SIZE, height: WHEEL_SIZE + 30 }} />
           </View>
           {/* Pointer */}
           <View style={s.pointer}>
             <Icon name="triangle" size={28} color="#F5A623" style={{ transform: [{ rotate: "180deg" }] }} />
           </View>
-          <Animated.View style={[wheelStyle, { position: "absolute", top: 30 }]}>
+          <Animated.View style={[wheelStyle, { position: "absolute", top: 30, width: WHEEL_SIZE, height: WHEEL_SIZE }]}>
+            {/* SVG: golden ring + slices */}
             <Svg width={WHEEL_SIZE} height={WHEEL_SIZE}>
               <Defs>
                 <SvgLG id="ring" x1="0" y1="0" x2="1" y2="1">
                   <Stop offset="0" stopColor="#F5A623" />
                   <Stop offset="1" stopColor="#FF5722" />
                 </SvgLG>
-                <RadialGradient id="disc" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0" stopColor="#3a2a4a" />
-                  <Stop offset="1" stopColor="#0a0a0f" />
-                </RadialGradient>
               </Defs>
               <Circle cx={CENTER} cy={CENTER} r={R + 3} fill="url(#ring)" />
-              {slices.map((sl, i) => {
-                const rc = rarityColor(sl.prize.rarity);
-                const midRad = (sl.mid - 90) * Math.PI / 180;
-                const discR = R * 0.62;
-                const dx = CENTER + discR * Math.cos(midRad);
-                const dy = CENTER + discR * Math.sin(midRad);
-                return (
-                  <G key={sl.prize.prize_id}>
-                    <Path d={slicePath(sl.start, sl.end)} fill={SLICE_COLORS[i % 2]} stroke={rc} strokeWidth={1.5} />
-                    {/* Prize disc (circular badge inside slice) */}
-                    <Circle cx={dx} cy={dy} r={22} fill="url(#disc)" stroke={rc} strokeWidth={2} />
-                    {/* Name below the disc */}
-                    <G rotation={sl.mid} originX={CENTER} originY={CENTER}>
-                      <SvgText
-                        x={CENTER}
-                        y={CENTER - R + 18}
-                        fill={rc}
-                        fontSize={11}
-                        fontWeight="800"
-                        textAnchor="middle"
-                      >
-                        {sl.prize.name.length > 12 ? sl.prize.name.slice(0, 10) + "…" : sl.prize.name}
-                      </SvgText>
-                    </G>
-                  </G>
-                );
-              })}
+              {slices.map((sl, i) => (
+                <G key={sl.prize.prize_id}>
+                  <Path d={slicePath(sl.start, sl.end)} fill={SLICE_COLORS[i % 2]} stroke="#F5A623" strokeWidth={0.6} strokeOpacity={0.6} />
+                </G>
+              ))}
               {/* Center circle */}
-              <Circle cx={CENTER} cy={CENTER} r={48} fill="#F5A623" opacity={0.15} />
-              <Circle cx={CENTER} cy={CENTER} r={44} fill="#0D0D12" stroke="#F5A623" strokeWidth={2} />
+              <Circle cx={CENTER} cy={CENTER} r={52} fill="#F5A623" opacity={0.12} />
+              <Circle cx={CENTER} cy={CENTER} r={46} fill="#0D0D12" stroke="#F5A623" strokeWidth={2} />
             </Svg>
-            {/* Emoji-like icons on top of the disc (React Native icons over SVG) */}
+
+            {/* Per-slice content: circular prize DISC (image) + WHITE prize name — positioned + rotated with slice */}
             {slices.map((sl) => {
               const midRad = (sl.mid - 90) * Math.PI / 180;
-              const discR = R * 0.62;
-              const dx = CENTER + discR * Math.cos(midRad) - 14;
-              const dy = CENTER + discR * Math.sin(midRad) - 14;
+              const discR = R * 0.60;
+              const discSize = 56;
+              const cx = CENTER + discR * Math.cos(midRad);
+              const cy = CENTER + discR * Math.sin(midRad);
               const rc = rarityColor(sl.prize.rarity);
-              const iconName = sl.prize.prize_type === "item" ? "package-variant-closed" : (sl.prize.rarity === "legendary" ? "trophy" : (sl.prize.rarity === "epic" ? "diamond-stone" : (sl.prize.rarity === "rare" ? "star-four-points" : "poker-chip")));
+              const iconName = sl.prize.prize_type === "item"
+                ? "package-variant-closed"
+                : (sl.prize.rarity === "legendary" ? "trophy"
+                : (sl.prize.rarity === "epic" ? "diamond-stone"
+                : (sl.prize.rarity === "rare" ? "star-four-points" : "poker-chip")));
+              // Rotation for text/disc positioned along the radius pointing outward
+              const rot = sl.mid;
               return (
-                <View key={sl.prize.prize_id + "-ic"} style={{ position: "absolute", left: dx, top: dy, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-                  <Icon name={iconName} size={22} color={rc} />
+                <View
+                  key={sl.prize.prize_id + "-slice"}
+                  style={{
+                    position: "absolute",
+                    left: cx - discSize / 2,
+                    top: cy - discSize / 2,
+                    width: discSize,
+                    height: discSize,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transform: [{ rotate: `${rot}deg` }],
+                  }}
+                >
+                  {/* Circular DISC with prize image (or fallback icon) */}
+                  <View style={[s.disc, { borderColor: rc, shadowColor: rc }]}>
+                    {sl.prize.image_url ? (
+                      <Image source={{ uri: fileUrl(sl.prize.image_url) }} style={s.discImg} resizeMode="cover" />
+                    ) : (
+                      <View style={[s.discImg, { alignItems: "center", justifyContent: "center", backgroundColor: "#1a1a22" }]}>
+                        <Icon name={iconName} size={24} color={rc} />
+                      </View>
+                    )}
+                  </View>
+                  {/* White prize name below the disc */}
+                  <Text style={s.sliceLabel} numberOfLines={1}>
+                    {sl.prize.name.length > 11 ? sl.prize.name.slice(0, 10) + "…" : sl.prize.name}
+                  </Text>
                 </View>
               );
             })}
@@ -226,6 +234,13 @@ export default function Wheel() {
                 <Icon name="chart-donut" size={12} color="#F5A623" />
                 <Text style={s.weightTxt}>{p.weight}</Text>
               </View>
+              {p.image_url ? (
+                <Image source={{ uri: fileUrl(p.image_url) }} style={s.prizeThumb} />
+              ) : (
+                <View style={[s.prizeThumb, { alignItems: "center", justifyContent: "center", backgroundColor: "#262630" }]}>
+                  <Icon name="gift" size={20} color={rarityColor(p.rarity)} />
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -234,7 +249,11 @@ export default function Wheel() {
       {result && (
         <Pressable style={s.resultOverlay} onPress={() => setResult(null)} testID="wheel-result-overlay">
           <View style={[s.resultCard, { borderColor: rarityColor(result.rarity) }]}>
-            <Icon name="trophy" size={64} color={rarityColor(result.rarity)} />
+            {result.image_url ? (
+              <Image source={{ uri: fileUrl(result.image_url) }} style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: rarityColor(result.rarity) }} />
+            ) : (
+              <Icon name="trophy" size={64} color={rarityColor(result.rarity)} />
+            )}
             <Text style={s.resultTitle}>لقد ربحت!</Text>
             <Text style={[s.resultName, { color: rarityColor(result.rarity) }]}>{result.prize_name}</Text>
             {result.points_awarded > 0 && <Text style={s.resultPts}>+ {result.points_awarded} نقطة</Text>}
@@ -253,6 +272,9 @@ const s = StyleSheet.create({
   timerLbl: { color: "#B0B0B8", fontSize: 12 },
   timerVal: { color: "#F5A623", fontSize: 26, fontWeight: "900", letterSpacing: 3, marginTop: 4 },
   pointer: { position: "absolute", top: 4, zIndex: 5 },
+  disc: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#0D0D12" },
+  discImg: { width: "100%", height: "100%", borderRadius: 22 },
+  sliceLabel: { color: "#FFFFFF", fontSize: 11, fontWeight: "900", textAlign: "center", marginTop: 4, textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 }, maxWidth: 80 },
   spinBtn: { position: "absolute", top: 30 + CENTER - 40, width: 80, height: 80, borderRadius: 40, backgroundColor: "#F5A623", alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: "#0D0D12" },
   spinTxt: { color: "#0D0D12", fontSize: 22, fontWeight: "900" },
   pillsRow: { flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 24 },
@@ -260,6 +282,7 @@ const s = StyleSheet.create({
   pillL: { fontSize: 12, fontWeight: "800" },
   pillP: { color: "#F0F0F5", fontSize: 12, fontWeight: "800" },
   section: { alignSelf: "flex-end", color: "#F0F0F5", fontSize: 16, fontWeight: "800", marginTop: 24, marginBottom: 12 },
+  prizeThumb: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "#F5A623" },
   prizeRow: { flexDirection: "row-reverse", alignItems: "center", gap: 10, padding: 12, backgroundColor: "#1A1A22", borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: "#33333F" },
   prizeName: { color: "#F0F0F5", fontSize: 14, fontWeight: "800", textAlign: "right" },
   prizeDesc: { color: "#888899", fontSize: 11, textAlign: "right", marginTop: 2 },
